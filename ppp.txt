@@ -1,0 +1,132 @@
+-- Create database
+CREATE DATABASE StudentFeedback;
+
+-- Use the created database
+USE StudentFeedback;
+
+-- Create table for storing feedback
+CREATE TABLE Feedback (
+    feedback_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_name VARCHAR(100) NOT NULL,
+    course_name VARCHAR(100) NOT NULL,
+    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    feedback_text TEXT
+);
+
+-- Example Insert Statements for feedback data
+INSERT INTO Feedback (student_name, course_name, rating, feedback_text)
+VALUES
+('Alice Johnson', 'Mathematics', 4, 'Great course, but the pace was a bit fast.'),
+('Bob Smith', 'History', 5, 'Excellent! I learned a lot and enjoyed the lectures.'),
+('Charlie Brown', 'Science', 3, 'Good course but could use more practical examples.');
+
+
+pip install mysql-connector-python
+
+
+#program
+import mysql.connector
+
+# Define the Feedback class and its methods for handling feedback
+class FeedbackManager:
+    def __init__(self, host, user, password, database):
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
+        self.connection = self.connect_db()
+        self.cursor = self.connection.cursor()
+
+    def connect_db(self):
+        """ Establish a connection to the database """
+        try:
+            conn = mysql.connector.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database=self.database
+            )
+            if conn.is_connected():
+                print("Connection successful!")
+                return conn
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return None
+
+    def create_feedback(self, student_name, course_name, rating, feedback_text):
+        """ Method to insert feedback into the database """
+        query = """
+        INSERT INTO Feedback (student_name, course_name, rating, feedback_text)
+        VALUES (%s, %s, %s, %s)
+        """
+        data = (student_name, course_name, rating, feedback_text)
+        self.cursor.execute(query, data)
+        self.connection.commit()
+        print("Feedback submitted successfully!")
+
+    def get_all_feedback(self):
+        """ Method to retrieve all feedback records from the database """
+        query = "SELECT * FROM Feedback"
+        self.cursor.execute(query)
+        result = self.cursor.fetchall()
+        return result
+
+    def get_feedback_by_student(self, student_name):
+        """ Method to retrieve feedback for a specific student """
+        query = "SELECT * FROM Feedback WHERE student_name = %s"
+        self.cursor.execute(query, (student_name,))
+        result = self.cursor.fetchall()
+        return result
+
+    def update_feedback(self, feedback_id, rating, feedback_text):
+        """ Method to update a specific feedback entry """
+        query = """
+        UPDATE Feedback
+        SET rating = %s, feedback_text = %s
+        WHERE feedback_id = %s
+        """
+        data = (rating, feedback_text, feedback_id)
+        self.cursor.execute(query, data)
+        self.connection.commit()
+        print(f"Feedback with ID {feedback_id} updated successfully!")
+
+    def delete_feedback(self, feedback_id):
+        """ Method to delete a specific feedback entry """
+        query = "DELETE FROM Feedback WHERE feedback_id = %s"
+        self.cursor.execute(query, (feedback_id,))
+        self.connection.commit()
+        print(f"Feedback with ID {feedback_id} deleted successfully!")
+
+    def close_connection(self):
+        """ Method to close the database connection """
+        self.cursor.close()
+        self.connection.close()
+        print("Connection closed.")
+
+# Usage Example:
+if __name__ == "__main__":
+    # Create an instance of FeedbackManager
+    feedback_manager = FeedbackManager(host="localhost", user="root", password="password", database="StudentFeedback")
+
+    # Adding a new feedback
+    feedback_manager.create_feedback("John Doe", "Computer Science", 5, "Fantastic course with great content!")
+
+    # Retrieving all feedback records
+    feedback = feedback_manager.get_all_feedback()
+    for record in feedback:
+        print(record)
+
+    # Get feedback by student name
+    student_feedback = feedback_manager.get_feedback_by_student("Alice Johnson")
+    for record in student_feedback:
+        print(record)
+
+    # Update feedback for a specific feedback_id
+    feedback_manager.update_feedback(feedback_id=1, rating=4, feedback_text="Great course but too fast-paced.")
+
+    # Delete feedback for a specific feedback_id
+    feedback_manager.delete_feedback(feedback_id=2)
+
+    # Close the connection
+    feedback_manager.close_connection()
+
